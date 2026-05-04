@@ -85,7 +85,7 @@ def build_reply(lot_id: str, data: dict, car_hp: int,
         f"      Двигатель: {auto_displacement} cc, {translate_korean(fuel_name)}\n\n"
         f"*💰 Стоимость авто в Корее*\n~ {formatted_value} RUB\n"
         f"*🧾 Таможенная пошлина*\n~ {formatted_duty_rub} RUB\n"
-        f"*🧾 Утильсбор*\n~ {formatted_util_sbor} RUB\n"
+        f"*🧾 Утильсбор*\n~ {formatted_util_sbor} RUB  (по данным от 1 мая 2026)\n"
         f"*🧾 Расходы по Корее (доставка в порт, оформление, фрахт и прочее)*\n~ {formatted_cost(extra_costs_korea)} RUB\n"
         f"*🧾 Расходы по России (СБКТС, ЭПТС, брокерские услуги и прочее)*\n~ {formatted_cost(extra_costs_russia)} RUB\n"
         f"*🧾 Агентские услуги*\n~ 100 000 RUB\n\n"
