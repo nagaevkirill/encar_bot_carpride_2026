@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 COPY . /app
 RUN chown -R app:app /app
 
-USER app
+# USER app
 
 # бот/скрипт
 CMD ["python", "-u", "app_2026.py"]
