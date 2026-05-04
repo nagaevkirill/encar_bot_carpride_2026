@@ -120,5 +120,5 @@ if __name__ == "__main__":
     value = 12000.0  # евро
     hp = 250  # л.с.
 
-    recycling_fee = calc_recycling_fee(2000, "02.2024", 170)
+    recycling_fee = calc_recycling_fee(1998, "02.2024", 250)
     print(f"Утильсбор: {recycling_fee:.0f} RUB")
