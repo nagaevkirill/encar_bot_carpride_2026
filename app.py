@@ -106,7 +106,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         extra_costs_russia = 150000
         agentskie_uslugi = 100000
         #summary = int(customs_value_eur*kurs_euro) + int(customs_duty*kurs_euro) + extra_costs_korea + extra_costs_russia + agentskie_uslugi
-        summary = int(customs_value_eur*kurs_euro) + int(customs_duty*kurs_euro) + extra_costs_korea + extra_costs_russia + agentskie_uslugi + 17000
+        summary = int(customs_value_eur*kurs_euro) + int(customs_duty*kurs_euro) + extra_costs_korea + extra_costs_russia + agentskie_uslugi + 17000 + int(util_sbor)
 
         summary = f"{int(summary/1000)*1000:,}".replace(',', ' ')
 
