@@ -101,6 +101,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         formatted_value = f"{value:,}".replace(',', ' ')
         duty_rub = int(customs_duty*kurs_euro/1000)*1000 + 17000
         formatted_duty_rub = f"{duty_rub:,}".replace(',', ' ')
+        formatted_util_sbor = f"{util_sbor:,}".replace(',', ' ')
         extra_costs_korea = 127000
         extra_costs_russia = 150000
         agentskie_uslugi = 100000
@@ -116,7 +117,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"      Двигатель: {auto_displacement} cc, {translate_korean(fuel_name)}\n\n"
             f"*💰 Стоимость авто в Корее*\n~ {formatted_value} RUB\n"
             f"*🧾 Таможенная пошлина*\n~ {formatted_duty_rub} RUB\n"
-            f"*🧾 Утильсбор*\n~ {util_sbor} RUB\n"
+            f"*🧾 Утильсбор*\n~ {formatted_util_sbor} RUB\n"
             f"*🧾 Расходы по Корее (доставка в порт, оформление, фрахт и прочее)*\n~ {formatted_cost(extra_costs_korea)} RUB\n"
             f"*🧾 Расходы по России (СБКТС, ЭПТС, брокерские услуги и прочее)*\n~ {formatted_cost(extra_costs_russia)} RUB\n"
             f"*🧾 Агентские услуги*\n~ 100 000 RUB\n\n"
