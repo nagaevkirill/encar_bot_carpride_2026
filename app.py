@@ -123,7 +123,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"📦 до Краснодара: +200 000 RUB\n"
             f"🚗 Доставка в любой город РФ — по запросу\n\n"
             # f"📲 Заказать авто из Кореи — [Car Pride](https://t.me/Car_pride)\n"
-            f"📲 1ЗАКАЖИ ЭТО АВТО [ЗДЕСЬ](https://t.me/Car_pride) ➡️️ — [Car Pride](https://t.me/Car_pride)\n"
+            f"📲 ЗАКАЖИ ЭТО АВТО [ЗДЕСЬ](https://t.me/Car_pride) ➡️️ — [Car Pride](https://t.me/Car_pride)\n"
             f"📲 ЗАКАЖИ ЭТО АВТО [ЗДЕСЬ](https://t.me/Car_pride) ➡️️ — [Car Pride](https://t.me/Car_pride)\n"
             f"📲 ЗАКАЖИ ЭТО АВТО [ЗДЕСЬ](https://t.me/Car_pride) ➡️️ — [Car Pride](https://t.me/Car_pride)\n\n"
             f"➡️ EUR: {kurs_euro} USD: {kurs_usd} Обновлено {load_rate_date()}\n"
