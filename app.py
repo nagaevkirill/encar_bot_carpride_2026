@@ -3,6 +3,7 @@ from pathlib import Path
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from calculation import calculate_customs_duty
+from calculation_util import calc_recycling_fee
 from dict_for_replace import translate_korean
 from datetime import datetime
 from service_currency.scheduler import run_scheduler_in_background
@@ -80,6 +81,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         kurs_krw = load_rate_krw()
         kurs_euro = load_rate_eur()
         kurs_usd = load_rate_usd()
+        car_hp = 170
 
         auto_manuf = data.get("category", {}).get("manufacturerName") or "Нет данных"
         auto_model = data.get("category", {}).get("modelGroupName") or "Нет данных"
@@ -92,6 +94,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("user_id:", user_id, auto_displacement, formatted_auto_year, customs_value_eur)
 
         customs_duty = calculate_customs_duty(auto_displacement, formatted_auto_year, customs_value_eur)
+        util_sbor = calc_recycling_fee(auto_displacement, formatted_auto_year, car_hp)
         # print("customs_duty: ",customs_duty)
 
         value = int(customs_value_eur*kurs_euro/1000)*1000
@@ -113,6 +116,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"      Двигатель: {auto_displacement} cc, {translate_korean(fuel_name)}\n\n"
             f"*💰 Стоимость авто в Корее*\n~ {formatted_value} RUB\n"
             f"*🧾 Таможенная пошлина*\n~ {formatted_duty_rub} RUB\n"
+            f"*🧾 Утильсбор*\n~ {util_sbor} RUB\n"
             f"*🧾 Расходы по Корее (доставка в порт, оформление, фрахт и прочее)*\n~ {formatted_cost(extra_costs_korea)} RUB\n"
             f"*🧾 Расходы по России (СБКТС, ЭПТС, брокерские услуги и прочее)*\n~ {formatted_cost(extra_costs_russia)} RUB\n"
             f"*🧾 Агентские услуги*\n~ 100 000 RUB\n\n"
