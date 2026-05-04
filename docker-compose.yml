@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     image: tgbot_to_git:latest
     container_name: carpride_encar_tgbot_2026
-    command: ["python", "-u", "app_2026.py"]   # -u = непрос.Buffered stdout для логов
+    command: ["python", "-u", "app.py"]   # -u = непрос.Buffered stdout для логов
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app                  # чтобы import my_service.* точно находился
