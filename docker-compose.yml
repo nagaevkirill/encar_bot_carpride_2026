@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  tgbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tgbot_to_git:latest
+    container_name: carpride_encar_tgbot
+    command: ["python", "-u", "app.py"]   # -u = непрос.Buffered stdout для логов
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app                  # чтобы import my_service.* точно находился
+      - TZ=Europe/Moscow                 # поправь при необходимости
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
