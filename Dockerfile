@@ -23,4 +23,4 @@ RUN chown -R app:app /app
 USER app
 
 # бот/скрипт
-CMD ["python", "-u", "app.py"]
+CMD ["python", "-u", "app_2026.py"]
