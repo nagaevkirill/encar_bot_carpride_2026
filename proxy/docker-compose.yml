@@ -1,0 +1,45 @@
+# Лёгкий исходящий прокси для запросов бота к api.encar.com.
+# Разворачивается отдельным стеком в Portainer на сервере в РФ
+# (Encar отвечает 403 с зарубежных адресов, с российских — работает).
+#
+# Переменные задаются в Portainer: Stacks → Environment variables
+#   PROXY_LOGIN     логин  (обязательно)
+#   PROXY_PASSWORD  пароль (обязательно, длинный и случайный: openssl rand -hex 24)
+#
+# Затем в стеке бота:
+#   ENCAR_PROXY=http://<PROXY_LOGIN>:<PROXY_PASSWORD>@<IP этого сервера>:3128
+#
+# Проверка с любой машины (ждём 200):
+#   curl -s -o /dev/null -w "%{http_code}\n" -x http://login:pass@IP:3128 \
+#        https://api.encar.com/v1/readside/vehicle/42656226
+#
+# Порт 3128 смотрит в интернет — закройте его файрволом для всех,
+# кроме IP сервера с ботом (ufw allow from <IP бота> to any port 3128).
+
+services:
+  encar-proxy:
+    image: ghcr.io/tarampampam/3proxy:2   # 3proxy, образ ~ 5 МБ
+    container_name: encar_proxy
+    restart: unless-stopped
+    environment:
+      PROXY_LOGIN: ${PROXY_LOGIN:?PROXY_LOGIN не задан}
+      PROXY_PASSWORD: ${PROXY_PASSWORD:?PROXY_PASSWORD не задан}
+      PROXY_PORT: 3128            # HTTP(S) CONNECT — его использует бот
+      MAX_CONNECTIONS: 256
+      PRIMARY_RESOLVER: 1.1.1.1
+      SECONDARY_RESOLVER: 8.8.8.8
+      LOG_OUTPUT: /dev/stdout
+    ports:
+      - "3128:3128/tcp"
+      # SOCKS5 (порт 1080) наружу не публикуем — боту он не нужен
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 4096
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    labels:
+      - "monitoring.logs=true"
