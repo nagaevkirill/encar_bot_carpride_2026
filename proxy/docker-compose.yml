@@ -5,6 +5,8 @@
 # Переменные задаются в Portainer: Stacks → Environment variables
 #   PROXY_LOGIN     логин  (обязательно)
 #   PROXY_PASSWORD  пароль (обязательно, длинный и случайный: openssl rand -hex 24)
+#   EXTRA_ACCOUNTS  дополнительные пользователи, необязательно:
+#                   bot2:пароль2;kirill:пароль3   (пары через ";", без пробелов)
 #
 # Затем в стеке бота:
 #   ENCAR_PROXY=http://<PROXY_LOGIN>:<PROXY_PASSWORD>@<IP этого сервера>:3128
@@ -24,6 +26,7 @@ services:
     environment:
       PROXY_LOGIN: ${PROXY_LOGIN:?PROXY_LOGIN не задан}
       PROXY_PASSWORD: ${PROXY_PASSWORD:?PROXY_PASSWORD не задан}
+      EXTRA_ACCOUNTS: ${EXTRA_ACCOUNTS:-}
       PROXY_PORT: 3128            # HTTP(S) CONNECT — его использует бот
       MAX_CONNECTIONS: 256
       PRIMARY_RESOLVER: 1.1.1.1
