@@ -1,4 +1,4 @@
-import re, os, time, requests, json, logging
+import re, os, time, requests, json, logging, asyncio
 from pathlib import Path
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
@@ -15,6 +15,55 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 API_URL_TEMPLATE = "https://api.encar.com/v1/readside/vehicle/{}"
 LOT_ID_REGEX = re.compile(r"(\d{7,8})")
+
+# Encar закрыт bot-защитой: запросы с дефолтным User-Agent python-requests
+# получают 403. Прикидываемся браузером, открывшим карточку на fem.encar.com.
+ENCAR_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Referer": "https://fem.encar.com/",
+    "Origin": "https://fem.encar.com",
+    "Connection": "keep-alive",
+}
+ENCAR_TIMEOUT = 10
+ENCAR_RETRIES = 2  # повторов при 403/429/5xx и сетевых ошибках
+
+_encar_session = requests.Session()
+_encar_session.headers.update(ENCAR_HEADERS)
+
+
+def fetch_encar_vehicle(lot_id: str) -> requests.Response:
+    """Синхронный запрос к Encar с повтором. Вызывать через asyncio.to_thread."""
+    url = API_URL_TEMPLATE.format(lot_id)
+    last_exc = None
+    for attempt in range(ENCAR_RETRIES + 1):
+        try:
+            response = _encar_session.get(url, timeout=ENCAR_TIMEOUT)
+        except requests.RequestException as e:
+            last_exc = e
+            print(f"encar lot={lot_id} attempt={attempt} network error: {e}", flush=True)
+        else:
+            if response.status_code == 200:
+                return response
+            body = response.text[:300].replace("\n", " ")
+            print(
+                f"encar lot={lot_id} attempt={attempt} status={response.status_code} "
+                f"server={response.headers.get('Server')} "
+                f"cf-ray={response.headers.get('CF-RAY')} body={body!r}",
+                flush=True,
+            )
+            if response.status_code not in (403, 429) and response.status_code < 500:
+                return response
+            last_exc = None
+            last_response = response
+        time.sleep(1.5 * (attempt + 1))
+    if last_exc is not None:
+        raise last_exc
+    return last_response
 
 # Маркер в тексте бота — по нему понимаем, что это запрос HP
 HP_PROMPT_MARKER = "лот #"
@@ -137,9 +186,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         car_hp = int(hp_match.group())
 
-        api_url = API_URL_TEMPLATE.format(lot_id)
         try:
-            response = requests.get(api_url, timeout=10)
+            # requests блокирующий — уводим в поток, чтобы не вешать event loop бота
+            response = await asyncio.to_thread(fetch_encar_vehicle, lot_id)
             if response.status_code != 200:
                 await update.message.reply_text(
                     f"Ошибка запроса к API (код {response.status_code})."
@@ -157,6 +206,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(reply, parse_mode="Markdown")
 
         except Exception as e:
+            print(f"encar lot={lot_id} error: {type(e).__name__}: {e}", flush=True)
             await update.message.reply_text(
                 "Ошибка при получении информации о лоте. Попробуйте позже."
             )
