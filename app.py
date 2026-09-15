@@ -32,8 +32,26 @@ ENCAR_HEADERS = {
 ENCAR_TIMEOUT = 10
 ENCAR_RETRIES = 2  # повторов при 403/429/5xx и сетевых ошибках
 
+# CloudFront перед api.encar.com режет запросы с IP хостинга (403 "The request
+# could not be satisfied"). Обход — ходить к Encar через прокси с корейским
+# или хотя бы не заблокированным адресом. Только для Encar, Telegram и ЦБ
+# ходят напрямую. Формат: http://user:pass@host:port или socks5h://host:port
+ENCAR_PROXY = os.getenv("ENCAR_PROXY", "").strip()
+
 _encar_session = requests.Session()
 _encar_session.headers.update(ENCAR_HEADERS)
+if ENCAR_PROXY:
+    _encar_session.proxies = {"http": ENCAR_PROXY, "https": ENCAR_PROXY}
+    print(f"Encar: запросы идут через прокси {ENCAR_PROXY.split('@')[-1]}", flush=True)
+else:
+    print("Encar: прокси не задан (ENCAR_PROXY пуст), запросы идут напрямую", flush=True)
+
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _short_body(text: str, limit: int = 300) -> str:
+    """Убираем HTML-теги и лишние пробелы, чтобы в логах было видно причину."""
+    return " ".join(_HTML_TAG_RE.sub(" ", text).split())[:limit]
 
 
 def fetch_encar_vehicle(lot_id: str) -> requests.Response:
@@ -49,7 +67,7 @@ def fetch_encar_vehicle(lot_id: str) -> requests.Response:
         else:
             if response.status_code == 200:
                 return response
-            body = response.text[:300].replace("\n", " ")
+            body = _short_body(response.text)
             print(
                 f"encar lot={lot_id} attempt={attempt} status={response.status_code} "
                 f"server={response.headers.get('Server')} "
