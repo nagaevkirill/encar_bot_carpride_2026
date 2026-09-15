@@ -1,40 +1,63 @@
-# Лёгкий исходящий прокси для запросов бота к api.encar.com.
-# Разворачивается отдельным стеком в Portainer на сервере в РФ
-# (Encar отвечает 403 с зарубежных адресов, с российских — работает).
+# Stack для Portainer: исходящий прокси 3proxy за Traefik (сеть traefik_default).
+# Нужен боту для запросов к api.encar.com: Encar отвечает 403 с зарубежных
+# адресов, с российских — работает. Стек ставится на сервер в РФ.
 #
-# Переменные задаются в Portainer: Stacks → Environment variables
-#   PROXY_LOGIN     логин  (обязательно)
-#   PROXY_PASSWORD  пароль (обязательно, длинный и случайный: openssl rand -hex 24)
-#   EXTRA_ACCOUNTS  дополнительные пользователи, необязательно:
-#                   bot2:пароль2;kirill:пароль3   (пары через ";", без пробелов)
+# Traefik терминирует TLS (certresolver=letsencrypt) и пробрасывает TCP
+# в 3proxy. HTTP-роутер здесь не подходит: Traefik не проксирует метод
+# CONNECT, поэтому используется TCP-роутер по SNI. Сертификат выпускается
+# по имени из HOST_NAME, как и для остальных сервисов.
 #
-# Затем в стеке бота:
-#   ENCAR_PROXY=http://<PROXY_LOGIN>:<PROXY_PASSWORD>@<IP этого сервера>:3128
+# Перед деплоем в Portainer:
+#   1) В UI стека задать переменные окружения:
+#        HOST_NAME       например proxy.nagayev.ru
+#        PROXY_LOGIN     логин
+#        PROXY_PASSWORD  пароль (openssl rand -hex 24)
+#        EXTRA_ACCOUNTS  необязательно: bot2:пароль2;kirill:пароль3
+#   2) Убедиться, что DNS HOST_NAME → IP с Traefik.
+#   3) Сеть traefik_default должна существовать (она external).
 #
-# Проверка с любой машины (ждём 200):
-#   curl -s -o /dev/null -w "%{http_code}\n" -x http://login:pass@IP:3128 \
+# В стеке бота:
+#   ENCAR_PROXY=https://<PROXY_LOGIN>:<PROXY_PASSWORD>@<HOST_NAME>:443
+#
+# Проверка с любой машины (ждём 200; curl ≥ 7.52 умеет https-прокси):
+#   curl -s -o /dev/null -w "%{http_code}\n" -x https://login:pass@HOST_NAME:443 \
 #        https://api.encar.com/v1/readside/vehicle/42656226
-#
-# Порт 3128 смотрит в интернет — закройте его файрволом для всех,
-# кроме IP сервера с ботом (ufw allow from <IP бота> to any port 3128).
 
 services:
   encar-proxy:
     image: ghcr.io/tarampampam/3proxy:2   # 3proxy, образ ~ 5 МБ
     container_name: encar_proxy
     restart: unless-stopped
+
     environment:
       PROXY_LOGIN: ${PROXY_LOGIN:?PROXY_LOGIN не задан}
       PROXY_PASSWORD: ${PROXY_PASSWORD:?PROXY_PASSWORD не задан}
       EXTRA_ACCOUNTS: ${EXTRA_ACCOUNTS:-}
-      PROXY_PORT: 3128            # HTTP(S) CONNECT — его использует бот
+      PROXY_PORT: 3128            # HTTP CONNECT внутри контейнера, наружу не публикуется
       MAX_CONNECTIONS: 256
       PRIMARY_RESOLVER: 1.1.1.1
       SECONDARY_RESOLVER: 8.8.8.8
       LOG_OUTPUT: /dev/stdout
-    ports:
-      - "3128:3128/tcp"
-      # SOCKS5 (порт 1080) наружу не публикуем — боту он не нужен
+
+    # Порты наружу не открываем — вход только через Traefik по TLS.
+
+    networks:
+      - traefik_default
+
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik_default
+
+      # TCP-роутер с терминацией TLS: клиент подключается по https://HOST_NAME:443,
+      # Traefik снимает TLS и отдаёт чистый HTTP CONNECT в 3proxy.
+      - traefik.tcp.routers.encar-proxy.rule=HostSNI(`${HOST_NAME}`)
+      - traefik.tcp.routers.encar-proxy.entrypoints=websecure
+      - traefik.tcp.routers.encar-proxy.tls=true
+      - traefik.tcp.routers.encar-proxy.tls.certresolver=letsencrypt
+      - traefik.tcp.routers.encar-proxy.service=encar-proxy
+
+      - traefik.tcp.services.encar-proxy.loadbalancer.server.port=3128
+
     ulimits:
       nofile:
         soft: 4096
@@ -44,5 +67,7 @@ services:
       options:
         max-size: "5m"
         max-file: "2"
-    labels:
-      - "monitoring.logs=true"
+
+networks:
+  traefik_default:
+    external: true

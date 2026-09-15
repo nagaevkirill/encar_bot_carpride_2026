@@ -35,7 +35,8 @@ ENCAR_RETRIES = 2  # повторов при 403/429/5xx и сетевых ош�
 # CloudFront перед api.encar.com режет запросы с IP хостинга (403 "The request
 # could not be satisfied"). Обход — ходить к Encar через прокси с корейским
 # или хотя бы не заблокированным адресом. Только для Encar, Telegram и ЦБ
-# ходят напрямую. Формат: http://user:pass@host:port или socks5h://host:port
+# ходят напрямую. Формат: https://user:pass@host:443 (3proxy за Traefik),
+# http://user:pass@host:3128 или socks5h://host:1080
 ENCAR_PROXY = os.getenv("ENCAR_PROXY", "").strip()
 
 _encar_session = requests.Session()
